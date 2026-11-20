@@ -135,17 +135,27 @@ The test settings use an isolated SQLite test database and force demo AI mode; t
 
 ## Production deployment
 
-The Django API and admin require a Python host; GitHub Pages is static hosting only and cannot run Django or Django Admin. Deploy the backend to Render, Railway, or another Python host. In its `backend` working directory, install `requirements.txt`, run `python manage.py migrate` as a release/pre-deploy step, and start the web service with:
+The Django API and admin require a Python host; GitHub Pages is static hosting only and cannot run Django, Python, or a database. This repository includes a GitHub Actions Pages workflow and a Render Blueprint, but neither hosting platform is provisioned automatically. The live Pages URL will serve the React app only after Pages is configured and the workflow succeeds.
 
-```sh
-gunicorn syntrix_backend.wsgi:application --bind 0.0.0.0:$PORT
-```
+### Deploy the backend to Render
 
-Set backend environment variables through the hosting provider (never commit them): `DJANGO_DEBUG=False`, a generated `DJANGO_SECRET_KEY`, the provider's PostgreSQL `DATABASE_URL`, `DJANGO_ALLOWED_HOSTS` containing the backend hostname, `CORS_ALLOWED_ORIGINS` containing the exact HTTPS frontend origin, and `DJANGO_CSRF_TRUSTED_ORIGINS` containing trusted HTTPS origins. Set `DJANGO_SECURE_HSTS_SECONDS=31536000` after HTTPS is confirmed. Only enable HSTS for subdomains or preload after verifying every affected hostname is HTTPS-only. Add `OPENAI_API_KEY` only to the backend to enable live AI. Django uses HTTPS proxy headers, secure session/CSRF cookies, and WhiteNoise-served collected static files; run `python manage.py collectstatic --noinput` during the build. After deployment, create an admin with `python manage.py createsuperuser` using the host's shell.
+1. Create a Render PostgreSQL database and a web service from this repository's `render.yaml`. The Blueprint's `DATABASE_URL` is intentionally unsynced: set it to the private PostgreSQL connection URL from the database you provisioned. The service must use a hostname matching `DJANGO_ALLOWED_HOSTS` in the Blueprint; update that environment value if Render assigns a different hostname.
+2. Set `CORS_ALLOWED_ORIGINS` and `DJANGO_CSRF_TRUSTED_ORIGINS` to the exact HTTPS frontend origin (for this repository: `https://hari-unnikrishnan.github.io`), and optionally set `OPENAI_API_KEY` to enable real AI responses. Keep provider credentials in Render's environment settings only.
+3. Deploy. The manifest installs backend requirements, collects static files, runs migrations as its pre-deploy command, and starts Gunicorn. Verify `https://<your-backend-host>/api/health/` reports a connected database, then create an administrator from the Render shell with `python manage.py createsuperuser`.
 
-Document uploads are private and are not served from a public media URL. The default local `MEDIA_ROOT` is not durable on an ephemeral host; attach a persistent volume and set `MEDIA_ROOT` to its mount path (for example, `/var/data/syntrix-media`). Back up the database and volume independently.
+The manifest requests a persistent disk for private uploaded documents and uses Render's pre-deploy migration command, which is available on paid web-service plans. Render web instances, PostgreSQL, and persistent disks may incur charges; review current pricing before creating resources. Uploaded document contents are not exposed through a public media URL. Back up the database and disk independently.
 
-For GitHub Pages or another static frontend host, build from `frontend` with `VITE_API_URL` set to the deployed Django API's `/api` URL. For a project GitHub Pages site, set `VITE_BASE_PATH` to `/<repository-name>/`; use `/` for a custom domain or root deployment. These Vite values are public, so never put API keys or secrets in them. Configure the backend CORS and CSRF origin variables for the final HTTPS frontend URL. GitHub Pages alone cannot provide backend API, database, uploads, or Django Admin.
+### Deploy the frontend to GitHub Pages
+
+1. In GitHub, open **Settings → Pages** and set the build/deployment source to **GitHub Actions**.
+2. Under **Settings → Secrets and variables → Actions → Variables**, add the repository variable `VITE_API_URL` with the deployed API base URL, such as `https://<your-backend-host>/api`. It must be HTTPS, must end in `/api`, and must not contain credentials. Do not put an OpenAI key or other secret in a `VITE_*` variable.
+3. Push to `main` or run **Actions → Deploy Syntrix AI frontend to GitHub Pages → Run workflow**. The workflow tests the API client, builds the project with the `/syntrix-AI/` base path, and deploys `frontend/dist`. It intentionally fails the build if the backend URL is missing or invalid.
+
+The frontend URL for this repository is `https://hari-unnikrishnan.github.io/syntrix-AI/`. Keep the deployed backend origin in `CORS_ALLOWED_ORIGINS` and `DJANGO_CSRF_TRUSTED_ORIGINS`; local development can continue to use the local API fallback or `frontend/.env.local`.
+
+### Other Python hosts
+
+For Railway or another host, install `backend/requirements.txt`, run `python manage.py collectstatic --noinput`, apply `python manage.py migrate` as a release step, and start with `gunicorn syntrix_backend.wsgi:application --bind 0.0.0.0:$PORT` from `backend`. Set a generated `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, PostgreSQL `DATABASE_URL`, `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `DJANGO_CSRF_TRUSTED_ORIGINS` through the host's private environment configuration. Set `DJANGO_SECURE_HSTS_SECONDS=31536000` only after HTTPS is confirmed; enable subdomain or preload policies only after verifying every affected hostname is HTTPS-only. Configure durable private storage for uploads and back up the database and files independently.
 
 ## Repository
 

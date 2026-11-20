@@ -215,6 +215,26 @@ class AuthenticationApiTests(APITestCase):
         self.assertTrue(UserProfile.objects.filter(user=user).exists())
         self.assertTrue(UserSettings.objects.filter(user=user).exists())
 
+    def test_logout_revokes_token_and_requires_authentication(self):
+        user = User.objects.create_user(
+            username="logout-user",
+            password="secure-password-123",
+        )
+        token = Token.objects.create(user=user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
+        response = self.client.post(reverse("logout"), format="json")
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Token.objects.filter(user=user).exists())
+        self.assertEqual(self.client.get(reverse("current-user")).status_code, 401)
+
+        self.client.credentials()
+        self.assertEqual(
+            self.client.post(reverse("logout"), format="json").status_code,
+            401,
+        )
+
     def test_admin_login_sets_csrf_cookie_and_accepts_csrf_protected_post(self):
         admin_user = User.objects.create_superuser(
             username="csrf-admin",

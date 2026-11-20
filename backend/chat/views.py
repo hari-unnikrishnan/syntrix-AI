@@ -366,6 +366,15 @@ class LoginView(APIView):
         return Response({"token": token.key, "user": UserSerializer(user).data})
 
 
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.auth is not None:
+            request.auth.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]
 

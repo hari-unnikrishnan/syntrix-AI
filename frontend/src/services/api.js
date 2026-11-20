@@ -1,7 +1,8 @@
 import axios from "axios";
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+const localApiUrl = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "";
+
+export const API_BASE_URL = import.meta.env.VITE_API_URL || localApiUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -18,6 +19,7 @@ api.interceptors.request.use((config) => {
 export const authApi = {
   login: (credentials) => api.post("/auth/login/", credentials),
   register: (details) => api.post("/auth/register/", details),
+  logout: () => api.post("/auth/logout/"),
   me: () => api.get("/auth/me/"),
   profile: () => api.get("/auth/profile/"),
   updateProfile: (details) => api.patch("/auth/profile/", details),

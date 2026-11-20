@@ -200,17 +200,24 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("syntrix-token");
-    setToken(null);
-    setUser(null);
-    setConversations([]);
-    setMessages([]);
-    setActiveConversation(null);
-    setDashboardProfile(null);
-    setDashboardSettings(null);
-    setDocuments([]);
-    setUsageSummary(null);
+  const handleLogout = async () => {
+    setNotice("");
+    try {
+      await authApi.logout();
+    } catch (error) {
+      setNotice(getErrorMessage(error));
+    } finally {
+      sessionStorage.removeItem("syntrix-token");
+      setToken(null);
+      setUser(null);
+      setConversations([]);
+      setMessages([]);
+      setActiveConversation(null);
+      setDashboardProfile(null);
+      setDashboardSettings(null);
+      setDocuments([]);
+      setUsageSummary(null);
+    }
   };
 
   const handleSend = async (text) => {

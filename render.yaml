@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: syntrix-ai-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    preDeployCommand: python manage.py migrate
+    startCommand: gunicorn syntrix_backend.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /api/health/
+    autoDeploy: false
+    # Render persistent disks and production web instances may incur charges.
+    disk:
+      name: syntrix-ai-private-media
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.16
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: syntrix-ai-api.onrender.com
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: https://hari-unnikrishnan.github.io
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://hari-unnikrishnan.github.io
+      - key: DJANGO_SECURE_HSTS_SECONDS
+        value: "31536000"
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.1
+      - key: MEDIA_ROOT
+        value: /var/data/syntrix-ai-private-media

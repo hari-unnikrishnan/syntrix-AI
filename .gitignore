@@ -4,6 +4,7 @@
 .venv/
 frontend/node_modules/
 frontend/dist/
+frontend/.tsupgrader/
 backend/.venv/
 backend/private_media/
 backend/staticfiles/
