@@ -131,7 +131,7 @@ python manage.py check
 python manage.py test
 ```
 
-The test settings use an isolated SQLite test database and force demo AI mode; they do not use or replace `backend/db.sqlite3`. Build the frontend with `npm install` and `npm run build` from `frontend`.
+The test settings use an isolated SQLite test database and force demo AI mode; they do not use or replace `backend/db.sqlite3`. From `frontend`, install the lockfile with `npm ci` and run `npm test`. For local Vite development, copy `frontend/.env.example` to `frontend/.env.local`; local development does not require the production API URL. A production build intentionally requires a real HTTPS Django API URL.
 
 ## Production deployment
 
@@ -148,7 +148,7 @@ The manifest requests a persistent disk for private uploaded documents and uses 
 ### Deploy the frontend to GitHub Pages
 
 1. In GitHub, open **Settings → Pages** and set the build/deployment source to **GitHub Actions**.
-2. Under **Settings → Secrets and variables → Actions → Variables**, add the repository variable `VITE_API_URL` with the deployed API base URL, such as `https://<your-backend-host>/api`. It must be HTTPS, must end in `/api`, and must not contain credentials. Do not put an OpenAI key or other secret in a `VITE_*` variable.
+2. Under **Settings → Secrets and variables → Actions → Variables**, add the repository variable `VITE_API_URL` with the deployed API base URL, such as `https://<your-backend-host>/api`. It must be HTTPS, must end in `/api`, and must not contain credentials. Do not put an OpenAI key or other secret in a `VITE_*` variable. For local production-build checks only, copy `frontend/.env.production.example` to `frontend/.env.production` and enter the deployed URL there; `.env.production` is ignored by Git.
 3. Push to `main` or run **Actions → Deploy Syntrix AI frontend to GitHub Pages → Run workflow**. The workflow tests the API client, builds the project with the `/syntrix-AI/` base path, and deploys `frontend/dist`. It intentionally fails the build if the backend URL is missing or invalid.
 
 The frontend URL for this repository is `https://hari-unnikrishnan.github.io/syntrix-AI/`. Keep the deployed backend origin in `CORS_ALLOWED_ORIGINS` and `DJANGO_CSRF_TRUSTED_ORIGINS`; local development can continue to use the local API fallback or `frontend/.env.local`.

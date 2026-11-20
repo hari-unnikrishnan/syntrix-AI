@@ -7,7 +7,9 @@ export default defineConfig(({ mode, command }) => {
 
   if (command === "build") {
     if (!apiUrlValue) {
-      throw new Error("Set VITE_API_URL to the deployed Django API before building for production.");
+      throw new Error(
+        "Missing VITE_API_URL. Set it to the deployed Django HTTPS API URL ending in /api (GitHub Actions repository variable or frontend/.env.production); do not use localhost.",
+      );
     }
 
     let apiUrl;
