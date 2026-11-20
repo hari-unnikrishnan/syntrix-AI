@@ -1,0 +1,144 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block bodyclass %}{{ block.super }} database-dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; Database overview
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="syntrix-db-dashboard">
+  <header class="syntrix-db-heading">
+    <div>
+      <h1>Database overview</h1>
+      <p>Live status and record totals from the configured Django database.</p>
+    </div>
+    <a class="syntrix-db-button" href="{% url 'admin:index' %}">Back to administration</a>
+  </header>
+
+  <section class="syntrix-db-identity" aria-label="Database connection">
+    <article>
+      <span>Connection</span>
+      <strong class="{% if database.status == 'connected' %}is-connected{% else %}is-unavailable{% endif %}">
+        {{ database.status|title }}
+      </strong>
+    </article>
+    <article>
+      <span>Database</span>
+      <strong>{{ database.name }}</strong>
+    </article>
+    <article>
+      <span>Engine</span>
+      <strong>{{ database.engine|title }}</strong>
+    </article>
+  </section>
+
+  {% if database.status == "connected" %}
+  <section class="syntrix-db-summary" aria-label="Application records">
+    <article><span>Users</span><strong>{{ counts.users }}</strong></article>
+    <article><span>Conversations</span><strong>{{ counts.conversations }}</strong></article>
+    <article><span>Messages</span><strong>{{ counts.messages }}</strong></article>
+    <article><span>Documents</span><strong>{{ counts.documents }}</strong></article>
+    <article><span>AI usage logs</span><strong>{{ counts.ai_usage_logs }}</strong></article>
+  </section>
+
+  <section class="module">
+    <table>
+      <caption><span class="caption">Application models and records</span></caption>
+      <thead>
+        <tr><th scope="col">Model</th><th scope="col">Database table</th><th scope="col">Records</th><th scope="col">Admin</th></tr>
+      </thead>
+      <tbody>
+        {% for model in model_rows %}
+        <tr>
+          <th scope="row">{{ model.name }}</th>
+          <td><code>{{ model.table }}</code></td>
+          <td>{{ model.count }}</td>
+          <td>{% if model.admin_url %}<a href="{{ model.admin_url }}">View records</a>{% else %}<span class="quiet">Not registered</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No application model data is available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="syntrix-db-tables">
+    <h2>Database tables</h2>
+    <div>
+      {% for table in tables %}<code>{{ table }}</code>{% empty %}<span>No tables found.</span>{% endfor %}
+    </div>
+  </section>
+  {% else %}
+  <div class="errornote">The configured database could not be reached. Check the backend configuration and try again.</div>
+  {% endif %}
+</div>
+
+<style>
+  .syntrix-db-dashboard { max-width: 1180px; }
+  .syntrix-db-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 10px 0 24px;
+  }
+  .syntrix-db-heading h1 { margin-bottom: 5px; }
+  .syntrix-db-heading p { margin: 0; color: var(--body-quiet-color, #aaa); }
+  .syntrix-db-button {
+    display: inline-block;
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    border-radius: 5px;
+    color: #fff !important;
+    background: var(--button-bg, #417690);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .syntrix-db-identity, .syntrix-db-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .syntrix-db-identity article, .syntrix-db-summary article {
+    display: grid;
+    gap: 9px;
+    padding: 16px;
+    border: 1px solid var(--hairline-color, #444);
+    border-radius: 6px;
+    background: var(--darkened-bg, #1d1d1d);
+  }
+  .syntrix-db-identity article span, .syntrix-db-summary article span {
+    color: var(--body-quiet-color, #aaa);
+    font-size: 12px;
+  }
+  .syntrix-db-identity article strong { overflow-wrap: anywhere; }
+  .syntrix-db-summary article strong { font-size: 22px; }
+  .syntrix-db-identity .is-connected { color: #70c69a; }
+  .syntrix-db-identity .is-unavailable { color: #e88383; }
+  .syntrix-db-dashboard .module { overflow-x: auto; margin-bottom: 20px; }
+  .syntrix-db-dashboard table { width: 100%; }
+  .syntrix-db-dashboard td, .syntrix-db-dashboard th { vertical-align: middle; }
+  .syntrix-db-dashboard code {
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: var(--darkened-bg, #1d1d1d);
+  }
+  .syntrix-db-tables h2 { margin: 20px 0 12px; }
+  .syntrix-db-tables > div { display: flex; flex-wrap: wrap; gap: 8px; }
+  .syntrix-db-tables code {
+    padding: 6px 9px;
+    border: 1px solid var(--hairline-color, #444);
+    border-radius: 5px;
+    background: var(--darkened-bg, #1d1d1d);
+  }
+  @media (max-width: 600px) {
+    .syntrix-db-heading { align-items: flex-start; flex-direction: column; }
+  }
+</style>
+{% endblock %}
