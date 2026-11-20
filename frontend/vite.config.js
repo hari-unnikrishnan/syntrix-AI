@@ -5,13 +5,7 @@ export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const apiUrlValue = env.VITE_API_URL?.trim();
 
-  if (command === "build") {
-    if (!apiUrlValue) {
-      throw new Error(
-        "Missing VITE_API_URL. Set it to the deployed Django HTTPS API URL ending in /api (GitHub Actions repository variable or frontend/.env.production); do not use localhost.",
-      );
-    }
-
+  if (command === "build" && apiUrlValue) {
     let apiUrl;
     try {
       apiUrl = new URL(apiUrlValue);

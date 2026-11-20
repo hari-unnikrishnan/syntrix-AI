@@ -23,7 +23,12 @@ import {
   X,
 } from "lucide-react";
 import { useRef } from "react";
-import { API_BASE_URL, authApi, workspaceApi } from "./services/api.js";
+import {
+  API_BASE_URL,
+  API_CONFIGURATION_MESSAGE,
+  authApi,
+  workspaceApi,
+} from "./services/api.js";
 import DatabaseDashboard from "./components/DatabaseDashboard.jsx";
 
 const prompts = [
@@ -53,7 +58,15 @@ function App() {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
-  const [health, setHealth] = useState({ status: "checking", ai_mode: null });
+  const [health, setHealth] = useState(() =>
+    API_BASE_URL
+      ? { status: "checking", ai_mode: null }
+      : {
+          status: "offline",
+          ai_mode: null,
+          detail: API_CONFIGURATION_MESSAGE,
+        },
+  );
   const [conversations, setConversations] = useState([]);
   const [dashboardProfile, setDashboardProfile] = useState(null);
   const [dashboardSettings, setDashboardSettings] = useState(null);
@@ -81,6 +94,8 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!API_BASE_URL) return;
+
     workspaceApi
       .health()
       .then(({ data }) => setHealth(data))
@@ -95,9 +110,9 @@ function App() {
 
   useEffect(() => {
     let active = true;
-    if (!token) {
+    if (!token || !API_BASE_URL) {
       setReady(true);
-      setUser(null);
+      if (!API_BASE_URL) setUser(null);
       return () => {
         active = false;
       };
@@ -184,6 +199,11 @@ function App() {
   }, []);
 
   const handleAuth = async (mode, values) => {
+    if (!API_BASE_URL) {
+      setNotice(API_CONFIGURATION_MESSAGE);
+      return;
+    }
+
     setAuthLoading(true);
     setNotice("");
     try {
@@ -317,6 +337,7 @@ function App() {
         loading={authLoading}
         notice={notice}
         aiMode={health.ai_mode}
+        apiConfigured={Boolean(API_BASE_URL)}
         apiOnline={health.status === "ok"}
         apiMessage={health.detail}
       />
@@ -1099,7 +1120,15 @@ function ChatComposer({ onSend, sending }) {
   );
 }
 
-function AuthScreen({ onSubmit, loading, notice, aiMode, apiOnline, apiMessage }) {
+function AuthScreen({
+  onSubmit,
+  loading,
+  notice,
+  aiMode,
+  apiConfigured,
+  apiOnline,
+  apiMessage,
+}) {
   const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -1108,6 +1137,8 @@ function AuthScreen({ onSubmit, loading, notice, aiMode, apiOnline, apiMessage }
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!apiConfigured) return;
+
     const values = { username: username.trim(), password };
     if (mode === "register") values.email = email.trim();
     onSubmit(mode, values);
@@ -1141,6 +1172,11 @@ function AuthScreen({ onSubmit, loading, notice, aiMode, apiOnline, apiMessage }
               : "A focused place for your ideas, conversations, and work."}
           </p>
           {notice && <div className="auth-error" role="alert">{notice}</div>}
+          {!apiConfigured && (
+            <div className="auth-error backend-not-configured" role="alert">
+              {apiMessage || API_CONFIGURATION_MESSAGE}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="auth-form">
             <label htmlFor="username">Username</label>
             <input id="username" autoComplete="username" required value={username} onChange={(event) => setUsername(event.target.value)} />
@@ -1171,7 +1207,11 @@ function AuthScreen({ onSubmit, loading, notice, aiMode, apiOnline, apiMessage }
                 {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
             </div>
-            <button className="button-primary auth-submit" type="submit" disabled={loading}>
+            <button
+              className="button-primary auth-submit"
+              type="submit"
+              disabled={loading || !apiConfigured}
+            >
               {loading ? <LoaderCircle className="spin" size={17} /> : null}
               {mode === "login" ? "Sign in" : "Create account"}
               {!loading && <ArrowUp className="auth-submit-arrow" size={17} />}
@@ -1185,9 +1225,13 @@ function AuthScreen({ onSubmit, loading, notice, aiMode, apiOnline, apiMessage }
           </div>
           <div className="auth-security-note"><ShieldCheck size={15} /> Your conversations are private to your account.</div>
           <div className={`connection-status ${apiOnline ? "connection-online" : "connection-offline"}`}>
-            <span /> {apiOnline ? `API connected · ${aiMode === "demo" ? "Demo AI mode" : "OpenAI connected"}` : "API connection unavailable"}
+            <span /> {!apiConfigured
+              ? "Backend not configured"
+              : apiOnline
+                ? `API connected · ${aiMode === "demo" ? "Demo AI mode" : "OpenAI connected"}`
+                : "API connection unavailable"}
           </div>
-          {!apiOnline && apiMessage && (
+          {apiConfigured && !apiOnline && apiMessage && (
             <p className="connection-help">{apiMessage}</p>
           )}
         </div>

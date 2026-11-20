@@ -1,8 +1,17 @@
 import axios from "axios";
 
-const localApiUrl = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "";
+export const API_CONFIGURATION_MESSAGE =
+  "Django backend is not configured for this deployment. Set the GitHub Actions repository variable VITE_API_URL to the deployed HTTPS API URL ending in /api, then rebuild.";
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || localApiUrl;
+export function resolveApiBaseUrl(configuredUrl, isDevelopment) {
+  const trimmedUrl = configuredUrl?.trim();
+  return trimmedUrl || (isDevelopment ? "http://127.0.0.1:8000/api" : "");
+}
+
+export const API_BASE_URL = resolveApiBaseUrl(
+  import.meta.env.VITE_API_URL,
+  import.meta.env.DEV,
+);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,6 +20,10 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  if (!API_BASE_URL) {
+    return Promise.reject(new Error(API_CONFIGURATION_MESSAGE));
+  }
+
   const token = sessionStorage.getItem("syntrix-token");
   if (token) config.headers.Authorization = `Token ${token}`;
   return config;

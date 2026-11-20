@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import api, { workspaceApi } from "./api.js";
+import api, { resolveApiBaseUrl, workspaceApi } from "./api.js";
 
 describe("workspace API client", () => {
   const defaultAdapter = api.defaults.adapter;
@@ -35,5 +35,14 @@ describe("workspace API client", () => {
       message: "Hello",
       conversation_id: 42,
     });
+  });
+
+  it("keeps the production API unset when no backend URL is configured", () => {
+    expect(resolveApiBaseUrl("", false)).toBe("");
+    expect(resolveApiBaseUrl("  ", false)).toBe("");
+    expect(resolveApiBaseUrl("", true)).toBe("http://127.0.0.1:8000/api");
+    expect(
+      resolveApiBaseUrl(" https://api.example.test/api ", false),
+    ).toBe("https://api.example.test/api");
   });
 });
